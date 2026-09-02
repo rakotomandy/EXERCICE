@@ -1,0 +1,19 @@
+
+# Enable Apache's mod_rewrite module for URL rewriting
+RewriteEngine On
+
+# Condition: Skip rewriting if the request is for an actual file
+# Example: /css/style.css, /images/logo.png - these won't be rewritten
+RewriteCond %{REQUEST_FILENAME} !-f
+
+# Condition: Skip rewriting if the request is for an actual directory
+# Example: /uploads/, /assets/ - these won't be rewritten
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Rule: Rewrite all requests to index.php, passing the original path as the 'action' parameter
+# Examples of rewrites:
+#   /users/list  →  index.php?action=users/list
+#   /products/edit/5  →  index.php?action=products/edit/5
+#   /home?page=2  →  index.php?action=home&page=2
+# [QSA] = Query String Append, [NC] = No Case, [L] = Last rule
+RewriteRule ^(.*)$ index.php?action=$1 [QSA,NC,L]
