@@ -1,2 +1,5 @@
-<h1>Welcome to the Home Page</h1>
-<button class="btn btn-primary" onclick="window.location.href='<?php echo URL; ?>/Login/logout'">Logout</button>
+<h1>Welcome to the Home Page <?php echo $_SESSION['username'] ?></h1>
+<form action="" id="logout">
+    <!-- LOGOUT FORM -->
+    <button type="submit" class="btn btn-primary">Logout</button>
+</form>

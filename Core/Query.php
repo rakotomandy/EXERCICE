@@ -1,123 +1,112 @@
 <?php
 
-// To handle pdo query, database operations and db connection and relate method with models using prepared methods and chaining
 class Query
 {
-    // custom pdo connection
-    private static $hostname, $dbname, $user, $password;
-    private $query, $db, $reqType, $params;
 
-    public static function connect(string $hostname, string $dbname, string $user, string $password)
+    private static $hostname,
+        $username,
+        $password,
+        $database,
+        $connection;
+    private $query;
+
+    public static function connect($hostname, $username, $password, $database)
     {
         self::$hostname = $hostname;
-        self::$dbname = $dbname;
-        self::$user = $user;
+        self::$username = $username;
         self::$password = $password;
+        self::$database = $database;
     }
 
     public function __construct()
     {
-        $this->db = new PDO("mysql:host=" . self::$hostname . ";dbname=" . self::$dbname, self::$user, self::$password);
+        self::$connection = new PDO("mysql:host=" . self::$hostname . ";dbname=" . self::$database, self::$username, self::$password);
     }
 
-    public function select(string $table, array $columns = ['*'])
+    // public function getAll($table){
+    //     $this->query = self::$connection->prepare("SELECT * FROM $table");
+    //     $this->query->execute();
+    //     return $this->query->fetchAll(PDO::FETCH_ASSOC);
+    // }
+    public function getAll($table, $limit = null, $offset = null)
     {
-        $this->reqType = 'select';
-        $cols = implode(', ', $columns);
-        $this->query = "SELECT $cols FROM $table";
-        return $this;
-    }
-
-    public function where(string $column, string $operator, $value)
-    {
-        if ($this->reqType === 'select') {
-            $this->query .= " WHERE $column $operator :$column";
-            $this->params[$column] = $value;
+        if ($limit !== null && $offset !== null) {
+            $this->query = self::$connection->prepare("SELECT * FROM $table LIMIT :limit OFFSET :offset");
+            $this->query->bindParam(':limit', $limit, PDO::PARAM_INT);
+            $this->query->bindParam(':offset', $offset, PDO::PARAM_INT);
+        } elseif ($limit !== null) {
+            $this->query = self::$connection->prepare("SELECT * FROM $table LIMIT :limit");
+            $this->query->bindParam(':limit', $limit, PDO::PARAM_INT);
+        } else {
+            $this->query = self::$connection->prepare("SELECT * FROM $table");
         }
-        return $this;
+        $this->query->execute();
+        return $this->query->fetchAll(PDO::FETCH_OBJ);
     }
 
-    public function get()
+    // get one row from table
+    // ex: getOne('users', ['id' => 1])
+    public function getOne($table, $where = [])
     {
-        $stmt = $this->db->prepare($this->query);
-        if (isset($this->params)) {
-            foreach ($this->params as $column => $value) {
-                $stmt->bindValue(":$column", $value);
-            }
+        if (count($where) === 0) {
+            $this->query = self::$connection->prepare("SELECT * FROM $table");
+            $this->query->execute();
+            return $this->query->fetch(PDO::FETCH_OBJ);
+        } elseif (count($where) === 1) {
+            $key = array_keys($where)[0];
+            $value = array_values($where)[0];
+            $this->query = self::$connection->prepare("SELECT * FROM $table WHERE $key = ?");
+            $this->query->execute([$value]);
+            return $this->query->fetch(PDO::FETCH_OBJ);
+        } else {
+            $whereClause = implode(" AND ", array_map(function ($key) {
+                return "$key = ?";
+            }, array_keys($where)));
+            $this->query = self::$connection->prepare("SELECT * FROM $table WHERE $whereClause");
+            $this->query->execute(array_values($where));
+            return $this->query->fetch(PDO::FETCH_OBJ);
         }
-        $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function insert(string $table, array $data)
+    // insert data into table
+    // ex: insert('users', ['username' => 'john', 'email' => 'john@example.com'])
+    public function insert($table, $data)
     {
-        $this->reqType = 'insert';
-        $columns = implode(', ', array_keys($data));
-        $placeholders = ':' . implode(', :', array_keys($data));
-        $this->query = "INSERT INTO $table ($columns) VALUES ($placeholders)";
-        $this->params = $data;
-        return $this;
+        $columns = implode(", ", array_keys($data));
+        $placeholders = implode(", ", array_fill(0, count($data), "?"));
+        $this->query = self::$connection->prepare("INSERT INTO $table ($columns) VALUES ($placeholders)");
+        return $this->query->execute(array_values($data));
     }
 
-    public function update(string $table, array $data)
+    // update data in table
+    // ex:update('users', ['username' => 'new_username'], 'id = 1');
+    public function update($table, $data, $where)
     {
-        $this->reqType = 'update';
-        $set = '';
-        foreach ($data as $column => $value) {
-            $set .= "$column = :$column, ";
+        $set = implode(", ", array_map(function ($key) {
+            return "$key = ?";
+        }, array_keys($data)));
+
+        $this->query = self::$connection->prepare("UPDATE $table SET $set WHERE $where");
+        return $this->query->execute(array_values($data));;
+    }
+
+    // delete data from table
+    // ex: delete('users', 'id = 1');
+    public function delete($table, $where = [])
+    {
+        if (count($where) === 0) {
+            $this->query = self::$connection->prepare("DELETE FROM $table");
+            return $this->query->execute();
+        } else {
+            $whereClause = implode(" AND ", array_map(function ($key) {
+                return "$key = ?";
+            }, array_keys($where)));
+            $this->query = self::$connection->prepare("DELETE FROM $table WHERE $whereClause");
+            return $this->query->execute(array_values($where));
         }
-        $set = rtrim($set, ', ');
-        $this->query = "UPDATE $table SET $set";
-        $this->params = $data;
-        return $this;
-    }
-
-    public function delete(string $table)
-    {
-        $this->reqType = 'delete';
-        $this->query = "DELETE FROM $table";
-        return $this;
-    }
-
-    public function execute()
-    {
-        $stmt = $this->db->prepare($this->query);
-        if (isset($this->params)) {
-            foreach ($this->params as $column => $value) {
-                $stmt->bindValue(":$column", $value);
-            }
-        }
-        return $stmt->execute();
-    }
-
-    // custom query method to execute any query with parameters
-    public function query(string $query, array $params = [])
-    {
-        $this->reqType = 'custom';
-        $this->query = $query;
-        $this->params = $params;
-        return $this;
-    }
-
-    public function lastInsertId()
-    {
-        return $this->db->lastInsertId();
-    }
-
-    public function getQuery()
-    {
-        return $this->query;
     }
 }
 
-Query::connect('localhost', 'crud', 'root', '');
-// $db = new Query();
-// select example
-// $db->select('users', ['id', 'name'])->where('id', '=', 1)->get();
-// insert example
-// $db->insert('users', ['name' => 'John Doe', 'email' => 'john.doe@example.com'])->execute();
-// update example
-// $db->update('users', ['name' => 'Jane Doe'])->where('id', '=', 1)->execute();
-// delete example
-// $db->delete('users')->where('id', '=', 1)->execute();
-// echo $db->getQuery(); // Outputs: SELECT id, name FROM users WHERE id = :id
+Query::connect('localhost', 'root', '', 'crud');
+$db = new Query();
+$db->insert('users', ['username' => 'john', 'email' => 'john@example.com']);

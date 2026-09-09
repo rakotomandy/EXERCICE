@@ -23,6 +23,7 @@ class Login
     public function login()
     {
         if (isset($_POST['email']) && isset($_POST['password'])) {
+
             $email = htmlspecialchars($_POST['email']);
             $password = htmlspecialchars($_POST['password']);
             $result = $this->loginController->login($email, $password);
@@ -37,9 +38,8 @@ class Login
     // logout logic, implement prevent back history after logout
     public function logout()
     {
-   session_start();
-$_SESSION = array();
-session_destroy();
+    
+        session_destroy();
 
         // Prevent browser caching
         header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
@@ -48,7 +48,7 @@ session_destroy();
         header("Expires: Sat, 1 Jul 2000 05:00:00 GMT");
 
         // Redirect to login page
-        header("Location: " . URL . "/Login");
+        echo json_encode(['success' => true]);
         exit();;
     }
 }
