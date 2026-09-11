@@ -18,11 +18,12 @@ class Home
             $username = $_SESSION['username'];
             \Load::template('header', [
                 "title" => "Home",
-                "css" => ['bootstrap.min', 'logo']
+                "css" => ['bootstrap.min', 'logo', 'home']
             ]);
+            \Load::view('Templates/navbar');
             \Load::view('home');
             \Load::template('footer', [
-                "js" => ['jquery.min', 'logo', 'bootstrap.bundle.min']
+                "js" => ['jquery.min', 'logo', 'bootstrap.bundle.min', 'home']
             ]);
         } else {
             \Load::template('header', [

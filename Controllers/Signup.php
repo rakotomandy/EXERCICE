@@ -14,6 +14,7 @@ class Signup
             'title' => 'Signup',
             "css" => ['logo', 'bootstrap.min']
         ]);
+        Load::view('Templates/navbar');
         Load::view('Signup');
         Load::template('footer', [
             "js" => ['jquery.min','logo', 'bootstrap.bundle.min', 'login'],

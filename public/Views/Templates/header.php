@@ -8,5 +8,5 @@
         isset($css) && Load::css($css);
     ?>
 </head>
-<body class="overflow-hidden">
+<body class="overflow-hidden vh-100">
     

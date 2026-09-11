@@ -13,6 +13,7 @@ class Login
             'title' => 'Login',
             "css" => ['logo', 'bootstrap.min']
         ]);
+        Load::view('Templates/navbar');
         \Load::view('login', ['message' => 'Please login to your account.']);
         \Load::template('footer', [
             "js" => ['jquery.min', 'logo', 'bootstrap.bundle.min', 'login'],
@@ -48,7 +49,7 @@ class Login
         header("Expires: Sat, 1 Jul 2000 05:00:00 GMT");
 
         // Redirect to login page
-        echo json_encode(['success' => true]);
+        header("Location: " . URL . "Login");
         exit();;
     }
 }

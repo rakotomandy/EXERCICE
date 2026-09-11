@@ -9,15 +9,11 @@ $(document).ready(function() {
     // Handle login form submission
     $("#login").submit(function(e) {
         e.preventDefault();
-        const email = $("#email").val();
-        const password = $("#password").val();
+        const formData = $(this).serialize();
         $.ajax({
             url: "Login/login",
             type: "POST",
-            data: {
-                email: email,
-                password: password,
-            },
+            data: formData,
             dataType: "json",
         }).done(function(data) {
             if (data.success) {
@@ -32,19 +28,11 @@ $(document).ready(function() {
 // Handle signup form submission
 $("#signup").submit(function(e) {
     e.preventDefault();
-    const username = $("#username").val();
-    const email = $("#email").val();
-    const password = $("#password").val();
-    const password_confirm = $("#password_confirm").val();
+    const formData = $(this).serialize();
     $.ajax({
             url: "Signup/signup",
             type: "POST",
-            data: {
-                username: username,
-                email: email,
-                password: password,
-                password_confirm: password_confirm,
-            },
+            data: formData,
             dataType: "json",
         })
         .done(function(data) {
